@@ -92,14 +92,34 @@ git push -u origin feature/название-задачи
 
 После завершения и проверки необходимых изменений Frontend и Backend ответственный за проект создаёт Pull Request:
 
-- frontend → main
-- backend → main
+- frontend → main папка frontend
+- backend → main папка backend
 
 Слияние в main разрешается исключительно после проверки и одобрения владельцем проекта.
 
 После объединения изменений проводится совместное тестирование Frontend и Backend.
 
 Если обнаруживаются проблемы интеграции, необходимо исправить их в соответствующих рабочих ветках и повторно пройти процедуру Pull Request.
+
+!!как мерджить основные ветки разработчиков с main
+
+git switch main
+git pull origin main
+
+создать временную ветку:
+git switch -c integration/frontend
+
+mkdir frontend
+git archive frontend | tar -x -C frontend
+Эта команда возьмёт содержимое ветки frontend и распакует его в папку frontend текущей ветки.
+
+git add .
+git commit -m "Integrate frontend into main"
+
+git push -u origin integration/frontend
+
+далее pr в github
+integration/frontend → main
 
 7. Основные правила
 
