@@ -1,4 +1,4 @@
-import { Event, TemplateEvent } from '../model/types';
+import { Event, TemplateEvent } from '@/entities/event/model/types';
 
 const EventsMock: Event[] = [
     {

@@ -1,5 +1,5 @@
-import type { TemplateEvent } from '../model/types';
-import { TemplateMockData } from './mock';
+import { TemplateMockData } from '@/entities/event/api/mock';
+import type { TemplateEvent } from '@/entities/event/model/types';
 
 //Тут пока мок дата
 
