@@ -1,8 +1,8 @@
-import { getTemplateEvents } from '@/entities/Event';
-import { getTemplates } from '@/entities/Template';
-import EventCarousel from '@/widgets/EventCarousel';
-import LaptopScrollMockup from '@/widgets/LaptopScrollMockup';
-import TemplateCarousel from '@/widgets/TemplateCarousel';
+import { getTemplateEvents } from '@/entities/event';
+import { getTemplates } from '@/entities/template';
+import EventCarousel from '@/widgets/event-carousel';
+import LaptopScrollMockup from '@/widgets/laptop-scrollmockup';
+import TemplateCarousel from '@/widgets/template-carousel';
 import style from './Dashboard.module.scss';
 
 export default async function Dashboard() {

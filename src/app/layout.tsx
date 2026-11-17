@@ -1,6 +1,6 @@
 import { geistMono, geistSans } from '@/shared/fonts/fonts';
 import '@/shared/styles/fonts.scss';
-import NavigationBar from '@/widgets/NavBar/ui/NavigationBar';
+import NavigationBar from '@/widgets/navbar/ui/NavigationBar';
 import type { Metadata } from 'next';
 import './globals.scss';
 
