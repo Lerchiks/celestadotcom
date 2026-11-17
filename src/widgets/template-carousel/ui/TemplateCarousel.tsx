@@ -1,5 +1,5 @@
-import { Template } from '@/entities/Template';
-import TemplateCard from '@/entities/Template/ui/TemplateCard/TemplateCard';
+import { Template } from '@/entities/template';
+import TemplateCard from '@/entities/template/ui/TemplateCard/TemplateCard';
 import { bezierSans } from '@/shared/fonts/fonts';
 import PlanneryButton from '@/shared/ui/PlanneryButton';
 import styles from './TemplateCarousel.module.scss';

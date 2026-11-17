@@ -1,5 +1,5 @@
 'use client';
-import { EventCard, TemplateEvent } from '@/entities/Event';
+import { EventCard, TemplateEvent } from '@/entities/event';
 import { bezierSans } from '@/shared/fonts/fonts';
 import { useState } from 'react';
 import style from './EventCarousel.module.scss';
