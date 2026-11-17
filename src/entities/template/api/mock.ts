@@ -1,4 +1,4 @@
-import { Template } from '../model/types';
+import { Template } from '@/entities/template/model/types';
 
 export const TemplateMockData: Template[] = [
     {
