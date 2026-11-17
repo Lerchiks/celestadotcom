@@ -109,6 +109,8 @@ git push -u origin feature/название-задачи
 
 ## 🔀 Создание Pull Request
 
+гайд по фоткам: https://drive.google.com/file/d/1jJTMk3E-togSKg5NklUGpDZbu0A1N2Yl/view?usp=sharing
+
 После отправки изменений разработчик создаёт Pull Request на GitHub.
 
 > [!WARNING]
