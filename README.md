@@ -1,36 +1,531 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌙 Celesta
+## Содержание
 
-## Getting Started
+1. [Технологический стек](#-технологический-стек)
+2. [Установка и запуск](#-установка-и-запуск)
+3. [Архитектура проекта](#-архитектура-проекта)
+4. [Описание слоёв](#-описание-слоёв)
+5. [Сегменты внутри слайсов](#-сегменты-внутри-слайсов)
+6. [Публичный API и импорты](#-публичный-api-и-импорты)
+7. [Как определить, куда положить компонент](#-как-определить-куда-положить-новый-компонент)
+8. [Соглашения по наименованию файлов](#-соглашения-по-наименованию-файлов)
+9. [Соглашения по разработке](#-соглашения-по-разработке)
 
-First, run the development server:
+---
+
+## Технологический стек
+
+| Технология | Версия / пакет | Назначение |
+| --- | --- | --- |
+| **Next.js** | `16.2.9` | React-фреймворк, App Router, серверный рендеринг |
+| **React** | `19.2.4` | UI-библиотека |
+| **React DOM** | `19.2.4` | Рендеринг React в DOM |
+| **TypeScript** | `^5` | Типизация JavaScript |
+| **Tailwind CSS** | `^4` | Utility-first CSS |
+| `@tailwindcss/postcss` | `^4` | Интеграция Tailwind CSS с PostCSS |
+| **Sass** | `^1.101.0` | SCSS/Sass-стили |
+| **React Icons** | `^5.7.0` | Набор иконок |
+| **ESLint** | `^9` | Статический анализ кода |
+| `eslint-config-next` | `16.2.9` | Правила ESLint для Next.js |
+| **Prettier** | `^3.9.4` | Форматирование кода |
+| `eslint-config-prettier` | `^10.1.8` | Отключение конфликтующих с Prettier правил ESLint |
+| `eslint-plugin-prettier` | `^5.5.6` | Проверка форматирования через ESLint |
+
+---
+
+##  Установка и запуск
+
+Установка зависимостей (из корневой директории проекта):
+
+```bash
+npm i
+```
+
+Запуск локального сервера разработки:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+После запуска Next.js выведет адрес приложения в терминал — обычно [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Доступные npm-скрипты
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Команда | Действие |
+| --- | --- |
+| `npm run dev` | Запуск dev-сервера Next.js |
+| `npm run build` | Сборка production-версии |
+| `npm run start` | Запуск production-сервера после сборки |
+| `npm run lint` | Запуск ESLint |
 
-## Learn More
+Для production-запуска сначала соберите приложение:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Архитектура проекта
 
-## Deploy on Vercel
+Проект организован по принципам **[Feature-Sliced Design (FSD)](https://feature-sliced.design/)**. FSD разделяет код по уровням ответственности и предметным областям и помогает контролировать зависимости между частями приложения.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```text
+src/
+├── app/        # Инициализация приложения и маршрутизация Next.js
+├── views/      # Страницы приложения (проектное название уровня pages)
+├── widgets/    # Самостоятельные крупные блоки интерфейса
+├── features/   # Пользовательские действия и сценарии
+├── entities/   # Бизнес-сущности предметной области
+└── shared/     # Переиспользуемая инфраструктура и UI без бизнес-привязки
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> [!NOTE]
+> Слой `features` в базовой структуре проекта пока может отсутствовать — добавляйте его по мере появления соответствующей логики.
+
+### ⬇️ Направление зависимостей
+
+Зависимости направлены строго **сверху вниз**:
+
+```text
+app
+ ↓
+views
+ ↓
+widgets
+ ↓
+features
+ ↓
+entities
+ ↓
+shared
+```
+
+Верхние слои могут использовать нижние. Нижние слои **не должны** импортировать код верхних.
+
+| Слой | Может использовать |
+| --- | --- |
+| `app` | `views`, `widgets`, `features`, `entities`, `shared` |
+| `views` | `widgets`, `features`, `entities`, `shared` |
+| `widgets` | `features`, `entities`, `shared` |
+| `features` | `entities`, `shared` |
+| `entities` | `shared` |
+| `shared` | — (не зависит от других слоёв) |
+
+Не создавайте циклических зависимостей и не обходите архитектурные границы прямыми импортами внутренних файлов соседних слайсов.
+
+### Слои, слайсы и сегменты
+
+| Понятие | Что это | Пример |
+| --- | --- | --- |
+| **Слой** (layer) | Крупный уровень архитектуры | `widgets`, `features`, `entities` |
+| **Слайс** (slice) | Часть слоя по предметной области или назначению | `event-carousel`, `user`, `auth-by-email` |
+| **Сегмент** (segment) | Папка внутри слайса по технической ответственности | `ui`, `api`, `model`, `lib` |
+
+```text
+src/
+└── features/
+    └── add-to-favorites/     # слайс
+        ├── api/              # сегмент
+        ├── model/            # сегмент
+        ├── ui/               # сегмент
+        └── index.ts          # публичный API
+```
+
+Не каждый слайс обязан содержать все сегменты — создавайте только нужные.
+
+---
+
+## Описание слоёв
+
+### `app` — приложение и маршрутизация
+
+**Путь:** `src/app`
+
+Используется **Next.js App Router**. Слой отвечает за маршруты, корневую конфигурацию и интеграцию страниц с механизмами Next.js. Название директории определяет сегмент URL, а файл `page.tsx` задаёт страницу маршрута.
+
+```text
+src/app/
+├── layout.tsx
+├── page.tsx
+├── explore/
+│   └── page.tsx
+└── dashboard/
+    └── page.tsx
+```
+
+Специальные файлы Next.js:
+
+| Файл | Назначение |
+| --- | --- |
+| `layout.tsx` | Общий layout сегмента маршрута |
+| `page.tsx` | Содержимое маршрута |
+| `loading.tsx` | Состояние загрузки |
+| `error.tsx` | Обработка ошибок сегмента |
+| `not-found.tsx` | Страница не найденного маршрута |
+
+Страница маршрута должна оставаться **тонкой точкой входа**: она импортирует слайс из `views` и отображает его. Основную композицию выносите в `views`.
+
+`src/app/dashboard/page.tsx`:
+
+```tsx
+import Dashboard from '@/views/dashboard-page';
+
+export default function DashboardPage() {
+  return <Dashboard />;
+}
+```
+
+---
+
+###  `views` — страницы приложения
+
+**Путь:** `src/views`
+
+`views` — проектное название слоя, который в классическом FSD называется `pages`. Здесь из виджетов, фич, сущностей и общих компонентов собирается интерфейс конкретной страницы.
+
+**Соглашение об именовании:** слайсы страниц называются по шаблону `<название-страницы>-page`.
+
+```text
+src/views/
+└── dashboard-page/
+    ├── ui/
+    │   └── Dashboard.tsx
+    └── index.ts
+```
+
+Пример страницы:
+
+```tsx
+import EventCarousel from '@/widgets/event-carousel';
+import TemplateCarousel from '@/widgets/template-carousel';
+
+export default async function Dashboard() {
+  const eventsTemplates = await getTemplateEvents();
+  const templates = await getTemplates();
+
+  return (
+    <div>
+      <EventCarousel templates={eventsTemplates} />
+      <TemplateCarousel templates={templates} />
+    </div>
+  );
+}
+```
+
+> [!NOTE]
+> Это иллюстративный пример: функции `getTemplateEvents` и `getTemplates` должны быть определены в проекте и импортированы из соответствующих модулей.
+
+---
+
+### `widgets` — крупные блоки интерфейса
+
+**Путь:** `src/widgets`
+
+Самостоятельные, достаточно крупные части интерфейса, объединяющие несколько компонентов и/или бизнес-сценариев.
+
+**Примеры:** карусель событий, карусель шаблонов, шапка приложения, боковая панель, панель управления, крупный информационный блок.
+
+```text
+src/widgets/
+└── event-carousel/
+    ├── ui/
+    │   └── EventCarousel.tsx
+    └── index.ts
+```
+
+Публичный API (`index.ts`):
+
+```ts
+export { default } from './ui/EventCarousel';
+```
+
+Использование:
+
+```tsx
+import EventCarousel from '@/widgets/event-carousel';
+```
+
+> [!WARNING]
+> Не импортируйте внутренние файлы виджета напрямую из других слоёв. Нужные экспорты добавляйте в публичный API слайса.
+
+---
+
+### `features` — пользовательские действия и сценарии
+
+**Путь:** `src/features`
+
+Функциональность, описывающая конкретное действие пользователя или законченный сценарий.
+
+**Примеры:** добавление в избранное, поиск, фильтрация списка, авторизация через форму, подписка на уведомления, создание или публикация сущности, переключение подписки.
+
+```text
+src/features/
+└── add-to-favorites/
+    ├── api/
+    │   └── addToFavorites.ts
+    ├── model/
+    │   └── useFavorites.ts
+    ├── ui/
+    │   └── AddToFavoritesButton.tsx
+    └── index.ts
+```
+
+```ts
+export { AddToFavoritesButton } from './ui/AddToFavoritesButton';
+```
+
+```tsx
+import { AddToFavoritesButton } from '@/features/add-to-favorites';
+```
+
+| Создавать feature | Не создавать feature |
+| --- | --- |
+| Компонент реализует отдельное действие или сценарий, который можно назвать глаголом или пользовательским намерением | Компонент только отображает данные или является базовым UI-элементом (это `entities`, `widgets` или `shared`) |
+
+---
+
+###  `entities` — бизнес-сущности
+
+**Путь:** `src/entities`
+
+Сущности предметной области: объекты, с которыми работает продукт, их типы, данные, отображение и базовые операции.
+
+**Примеры** (конкретный набор определяется предметной областью): `user`, `event`, `template`, `project`, `organization`.
+
+```text
+src/entities/
+└── event/
+    ├── api/
+    ├── model/
+    ├── ui/
+    │   └── EventCard.tsx
+    └── index.ts
+```
+
+Сущность может содержать:
+
+- типы и интерфейсы данных;
+- функции получения или преобразования данных;
+- состояние, относящееся к сущности;
+- UI-компоненты для отображения сущности.
+
+```ts
+export { EventCard } from './ui/EventCard';
+export type { Event } from './model/types';
+```
+
+> [!TIP]
+> Сущность описывает сам объект предметной области. Действия пользователя над ним, если это отдельный сценарий, выносите в `features`.
+
+---
+
+### `shared` — общий переиспользуемый код
+
+**Путь:** `src/shared`
+
+Код, не относящийся к конкретной бизнес-сущности или сценарию и пригодный для использования на любом уровне.
+
+**Примеры:**
+
+- базовые UI-компоненты (кнопки, поля ввода, модальные окна);
+- общие стили и дизайн-токены;
+- шрифты, изображения и другие assets;
+- общие утилиты, конфигурация и типы;
+- инфраструктурные API-клиенты, не привязанные к конкретной сущности.
+
+```text
+src/shared/
+├── api/
+├── config/
+├── lib/
+├── assets/
+├── styles/
+└── ui/
+    ├── button/
+    └── input/
+```
+
+> [!IMPORTANT]
+> `shared` — **не** свалка для кода, который не удалось отнести к другим слоям. Каждый модуль должен быть действительно общим и не содержать бизнес-логики конкретной фичи или сущности.
+
+---
+
+## Сегменты внутри слайсов
+
+| Сегмент | Назначение |
+| --- | --- |
+| `ui` | React-компоненты и визуальное представление |
+| `api` | Запросы к серверу, функции работы с API |
+| `model` | Типы, состояние, бизнес-логика, хуки и селекторы |
+| `lib` | Локальные вспомогательные функции слайса |
+| `config` | Конфигурация слайса |
+| `assets` | Изображения и другие статические ресурсы слайса |
+
+```text
+src/features/search/
+├── api/
+│   └── search.ts
+├── model/
+│   ├── types.ts
+│   └── useSearch.ts
+├── ui/
+│   └── SearchForm.tsx
+├── lib/
+│   └── normalizeQuery.ts
+└── index.ts
+```
+
+Не создавайте все папки заранее — структура должна отражать реальное содержимое слайса.
+
+---
+
+## Публичный API и импорты
+
+Слайс взаимодействует с остальным приложением через **публичный API** — как правило, файл `index.ts`.
+
+```text
+src/
+├── widgets/
+│   └── event-carousel/
+│       ├── ui/
+│       │   └── EventCarousel.tsx
+│       └── index.ts
+└── views/
+    └── dashboard-page/
+        └── ui/
+            └── Dashboard.tsx
+```
+
+`src/widgets/event-carousel/index.ts`:
+
+```ts
+export { default } from './ui/EventCarousel';
+```
+
+`Dashboard.tsx`:
+
+```tsx
+import EventCarousel from '@/widgets/event-carousel';
+```
+
+> [!NOTE]
+> Алиас `@/` настроен в `tsconfig.json` и указывает на `src/`.
+
+### Основные правила импортов
+
+1. Импортируйте слайсы через публичный API, а не через внутреннюю структуру.
+2. Не импортируйте код из слоя, который находится выше текущего.
+3. Не связывайте слайсы одного слоя прямыми внутренними импортами. Если общий код нужен нескольким слайсам — перенесите его на нижележащий подходящий слой.
+4. Избегайте циклических зависимостей.
+5. Не превращайте `shared` в хранилище бизнес-логики.
+
+---
+
+## Как определить, куда положить новый компонент
+
+| Вопрос | Слой |
+| --- | --- |
+| Это настройка приложения, layout или файл маршрута Next.js? | `app` |
+| Это композиция конкретной страницы? | `views` |
+| Это крупный самостоятельный блок интерфейса? | `widgets` |
+| Это действие или пользовательский сценарий? | `features` |
+| Это бизнес-объект предметной области? | `entities` |
+| Это общий UI или утилита без бизнес-привязки? | `shared` |
+
+**Примеры:**
+
+| Компонент | Куда положить |
+| --- | --- |
+| `Button` без бизнес-смысла | `shared/ui` |
+| `EventCard`, отображающая данные события | `entities/event/ui` |
+| `AddToFavoritesButton`, выполняющая действие | `features/add-to-favorites/ui` |
+| `EventCarousel`, объединяющая карточки и управление каруселью | `widgets/event-carousel` |
+| Композиция главной страницы | `views/main-page` |
+| `src/app/page.tsx` | точка входа маршрута Next.js |
+
+> [!TIP]
+> Это ориентиры по распределению ответственности. Окончательное решение зависит от того, какую именно логику содержит компонент.
+
+---
+
+## Соглашения по наименованию файлов
+
+### Сводная таблица
+
+| Что именуем | Стиль | Примеры |
+| --- | --- | --- |
+| Слайсы (папки в слоях) | `kebab-case` | `event-carousel`, `add-to-favorites`, `auth-by-email` |
+| Слайсы страниц в `views` | `<название-страницы>-page` | `dashboard-page`, `main-page` |
+| Сегменты | строчные, из фиксированного набора | `ui`, `api`, `model`, `lib`, `config`, `assets` |
+| React-компоненты | `PascalCase.tsx` | `EventCarousel.tsx`, `EventCard.tsx`, `SearchForm.tsx` |
+| Хуки | `camelCase` с префиксом `use` | `useFavorites.ts`, `useSearch.ts` |
+| Функции (API, утилиты) | `camelCase.ts` | `addToFavorites.ts`, `normalizeQuery.ts`, `search.ts` |
+| Типы и интерфейсы | файл `types.ts`, сами типы — `PascalCase` | `model/types.ts` → `Event`, `Template` |
+| Публичный API слайса | всегда `index.ts` | `widgets/event-carousel/index.ts` |
+| Файлы маршрутов Next.js | строго по соглашению Next.js | `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, `not-found.tsx` |
+| Директории маршрутов в `app` | `kebab-case` (задают сегмент URL) | `explore`, `dashboard`, `user-settings` |
+
+### Правила
+
+1. **Папки — `kebab-case`.** Это касается слайсов и директорий маршрутов. Исключение — служебные имена Next.js.
+2. **Файл с React-компонентом называется так же, как компонент:** `EventCard.tsx` экспортирует `EventCard`.
+3. **Один основной компонент — один файл.** Мелкие приватные подкомпоненты можно держать рядом в том же слайсе.
+4. **Файлы без JSX — `.ts`, с JSX — `.tsx`.**
+5. **Имя слайса отражает назначение, а не реализацию.** Для фич — действие или намерение (`add-to-favorites`, а не `favorites-button`), для сущностей — существительное в единственном числе (`event`, а не `events`).
+6. **Суффикс `-page` обязателен** только для слайсов в `views`; в других слоях его не используйте.
+7. **Не создавайте файлы с общими именами** вроде `utils.ts`, `helpers.ts`, `common.ts`. Называйте файл по тому, что в нём лежит: `normalizeQuery.ts`, `formatDate.ts`.
+8. **Тесты и стили лежат рядом с кодом и называются по нему** (рекомендация): `EventCard.test.tsx`, `EventCard.module.scss`.
+
+### Пример
+
+```text
+src/
+├── app/
+│   └── user-settings/
+│       └── page.tsx
+├── views/
+│   └── user-settings-page/
+│       ├── ui/
+│       │   └── UserSettings.tsx
+│       └── index.ts
+├── features/
+│   └── add-to-favorites/
+│       ├── api/
+│       │   └── addToFavorites.ts
+│       ├── model/
+│       │   └── useFavorites.ts
+│       ├── ui/
+│       │   └── AddToFavoritesButton.tsx
+│       └── index.ts
+└── entities/
+    └── event/
+        ├── model/
+        │   └── types.ts
+        ├── ui/
+        │   └── EventCard.tsx
+        └── index.ts
+```
+
+> [!NOTE]
+> Правила 5–8 и стиль имён функций и хуков следуют из примеров в этой документации и общепринятой практики React/TypeScript. Если в команде принято иное, скорректируйте таблицу под него.
+
+---
+
+## Соглашения по разработке
+
+- Соблюдайте направление зависимостей FSD — от верхних слоёв к нижним.
+- Держите код слайса рядом с его ответственностью.
+- Экспортируйте наружу только то, что действительно нужно другим слайсам.
+- Используйте понятные названия, отражающие назначение модуля.
+- Не создавайте отдельный слайс для каждого маленького компонента без необходимости.
+- Не помещайте бизнес-логику в `shared`.
+- Используйте TypeScript-типы для контрактов данных и props компонентов.
+- Для стилей используйте Tailwind CSS и Sass, следуя подходу, принятому в конкретной части приложения.
+- Перед завершением работы выполняйте проверки:
+
+  ```bash
+  npm run lint
+  npm run build
+  ```
